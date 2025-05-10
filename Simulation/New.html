@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Shock Wave Simulation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .simulation-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            background-color: #f0f0f0;
+            margin: 20px 0;
+            overflow: hidden;
+            border-radius: 5px;
+        }
+        
+        .road {
+            position: absolute;
+            width: 100%;
+            height: 60px;
+            background-color: #555;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .lane-divider {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background-color: #fff;
+            top: 50%;
+            transform: translateY(-50%);
+            border-style: dashed;
+        }
+        
+        .car {
+            position: absolute;
+            width: 40px;
+            height: 20px;
+            border-radius: 3px;
+            top: 50%;
+            transform: translateY(-50%);
+            text-align: center;
+            line-height: 20px;
+            font-size: 10px;
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+        
+        .controls {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        button, select {
+            padding: 8px 12px;
+            margin-right: 10px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4a69bd;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background-color: #1e3799;
+        }
+        
+        .slider-container {
+            margin: 15px 0;
+        }
+        
+        .slider-container label {
+            display: inline-block;
+            width: 150px;
+            font-weight: bold;
+        }
+        
+        .info-panel {
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        h2 {
+            color: #333;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        
+        .legend {
+            display: flex;
+            margin-top: 15px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-right: 20px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Traffic Shock Wave Simulation</h1>
+    
+    <div class="controls">
+        <button id="startBtn">Start Simulation</button>
+        <button id="stopBtn">Stop Simulation</button>
+        <button id="resetBtn">Reset</button>
+        <button id="brakeBtn">Cause Braking Event</button>
+        
+        <div class="slider-container">
+            <label for="numCars">Number of Cars:</label>
+            <input type="range" id="numCars" min="5" max="30" value="15">
+            <span id="numCarsValue">15</span>
+        </div>
+        
+        <div class="slider-container">
+            <label for="initialSpeed">Initial Speed:</label>
+            <input type="range" id="initialSpeed" min="1" max="10" value="5">
+            <span id="initialSpeedValue">5</span>
+        </div>
+        
+        <div class="slider-container">
+            <label for="driverReaction">Driver Reaction Time (ms):</label>
+            <input type="range" id="driverReaction" min="100" max="1000" step="50" value="300">
+            <span id="driverReactionValue">300</span>
+        </div>
+    </div>
+    
+    <div class="simulation-container">
+        <div class="road"></div>
+        <div class="lane-divider"></div>
+    </div>
+    
+    <div class="info-panel">
+        <h2>Visualization Key</h2>
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #4cd137;"></div>
+                <div>Normal Speed</div>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #fbc531;"></div>
+                <div>Slowing</div>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #e84118;"></div>
+                <div>Braking Hard</div>
+            </div>
+        </div>
+        
+        <h2>About Traffic Shock Waves</h2>
+        <p>
+            Traffic shock waves are disturbances that propagate through traffic like waves through a fluid. They typically move backward 
+            relative to the direction of traffic flow. The visual simulation above demonstrates how a single braking event can cause 
+            a cascading effect, creating waves of slowdowns that persist even after the original disturbance is gone.
+        </p>
+        <p>
+            In this model, each car adjusts its speed based on its distance to the car ahead. When the "Cause Braking Event" button is pressed, 
+            one car suddenly slows down, forcing following cars to react with a slight delay (reaction time). This creates the characteristic 
+            backward-propagating wave pattern.
+        </p>
+    </div>
+
+    <script>
+        class Car {
+            constructor(id, x, speed, container) {
+                this.id = id;
+                this.x = x;
+                this.speed = speed;
+                this.maxSpeed = speed;
+                this.minSpeed = 0;
+                this.targetSpeed = speed;
+                this.acceleration = 0.2;
+                this.deceleration = 0.5;
+                this.safeDistance = 50;
+                this.container = container;
+                this.width = 40;
+                this.height = 20;
+                this.element = document.createElement('div');
+                this.element.className = 'car';
+                this.element.style.left = this.x + 'px';
+                this.element.style.backgroundColor = '#4cd137'; // Green for normal speed
+                this.element.textContent = id + 1;
+                this.container.appendChild(this.element);
+            }
+            
+            update(deltaTime, leadCarDistance, containerWidth) {
+                // Calculate desired speed based on distance to car ahead
+                if (leadCarDistance !== null) {
+                    // Adjust speed based on distance to lead car
+                    if (leadCarDistance < this.safeDistance) {
+                        this.targetSpeed = Math.max(0, this.targetSpeed - this.deceleration);
+                    } else if (leadCarDistance > this.safeDistance * 1.5) {
+                        this.targetSpeed = Math.min(this.maxSpeed, this.targetSpeed + this.acceleration);
+                    }
+                }
+                
+                // Gradually adjust current speed to target speed
+                if (this.speed < this.targetSpeed) {
+                    this.speed = Math.min(this.speed + this.acceleration, this.targetSpeed);
+                } else if (this.speed > this.targetSpeed) {
+                    this.speed = Math.max(this.speed - this.deceleration, this.targetSpeed);
+                }
+                
+                // Update position
+                this.x += this.speed * deltaTime / 16;
+                
+                // Wrap around when car reaches the end of the container
+                if (this.x > containerWidth) {
+                    this.x = -this.width;
+                }
+                
+                // Update car color based on speed relative to max speed
+                if (this.speed < this.maxSpeed * 0.3) {
+                    this.element.style.backgroundColor = '#e84118'; // Red for braking hard
+                } else if (this.speed < this.maxSpeed * 0.7) {
+                    this.element.style.backgroundColor = '#fbc531'; // Yellow for slowing
+                } else {
+                    this.element.style.backgroundColor = '#4cd137'; // Green for normal speed
+                }
+                
+                // Update visual representation
+                this.element.style.left = this.x + 'px';
+            }
+            
+            brake() {
+                this.targetSpeed = this.minSpeed;
+            }
+            
+            remove() {
+                this.container.removeChild(this.element);
+            }
+        }
+        
+        class TrafficSimulation {
+            constructor() {
+                this.container = document.querySelector('.simulation-container');
+                this.containerWidth = this.container.offsetWidth;
+                this.cars = [];
+                this.isRunning = false;
+                this.lastTimestamp = 0;
+                
+                // DOM elements
+                this.startBtn = document.getElementById('startBtn');
+                this.stopBtn = document.getElementById('stopBtn');
+                this.resetBtn = document.getElementById('resetBtn');
+                this.brakeBtn = document.getElementById('brakeBtn');
+                this.numCarsSlider = document.getElementById('numCars');
+                this.numCarsValue = document.getElementById('numCarsValue');
+                this.initialSpeedSlider = document.getElementById('initialSpeed');
+                this.initialSpeedValue = document.getElementById('initialSpeedValue');
+                this.driverReactionSlider = document.getElementById('driverReaction');
+                this.driverReactionValue = document.getElementById('driverReactionValue');
+                
+                // Initialize event listeners
+                this.initEventListeners();
+            }
+            
+            initEventListeners() {
+                this.startBtn.addEventListener('click', () => this.start());
+                this.stopBtn.addEventListener('click', () => this.stop());
+                this.resetBtn.addEventListener('click', () => this.reset());
+                this.brakeBtn.addEventListener('click', () => this.causeBrakingEvent());
+                
+                this.numCarsSlider.addEventListener('input', () => {
+                    this.numCarsValue.textContent = this.numCarsSlider.value;
+                });
+                
+                this.initialSpeedSlider.addEventListener('input', () => {
+                    this.initialSpeedValue.textContent = this.initialSpeedSlider.value;
+                });
+                
+                this.driverReactionSlider.addEventListener('input', () => {
+                    this.driverReactionValue.textContent = this.driverReactionSlider.value;
+                });
+            }
+            
+            setup() {
+                const numCars = parseInt(this.numCarsSlider.value);
+                const speed = parseInt(this.initialSpeedSlider.value);
+                
+                // Clear existing cars
+                this.cars.forEach(car => car.remove());
+                this.cars = [];
+                
+                // Create new cars with even spacing
+                const spacing = this.containerWidth / numCars;
+                for (let i = 0; i < numCars; i++) {
+                    const car = new Car(i, i * spacing, speed, this.container);
+                    this.cars.push(car);
+                }
+            }
+            
+            start() {
+                if (!this.isRunning) {
+                    this.isRunning = true;
+                    this.setup();
+                    this.lastTimestamp = performance.now();
+                    requestAnimationFrame(timestamp => this.update(timestamp));
+                }
+            }
+            
+            stop() {
+                this.isRunning = false;
+            }
+            
+            reset() {
+                this.stop();
+                this.setup();
+            }
+            
+            causeBrakingEvent() {
+                if (this.cars.length > 0) {
+                    // Select a random car in the middle of the pack
+                    const middleIndex = Math.floor(this.cars.length / 2);
+                    const selectedCar = this.cars[middleIndex];
+                    selectedCar.brake();
+                    
+                    // Schedule the brake propagation with reaction time delays
+                    this.propagateBraking(middleIndex);
+                }
+            }
+            
+            propagateBraking(startIndex) {
+                const reactionTime = parseInt(this.driverReactionSlider.value);
+                
+                // Propagate backward (to cars behind)
+                for (let i = startIndex + 1; i < this.cars.length; i++) {
+                    setTimeout(() => {
+                        if (this.isRunning && i < this.cars.length) {
+                            // Brake less severely as we move further from the source
+                            const distanceFromSource = i - startIndex;
+                            const brakingFactor = Math.max(0.2, 1 - distanceFromSource * 0.1);
+                            this.cars[i].targetSpeed *= brakingFactor;
+                        }
+                    }, reactionTime * (i - startIndex));
+                }
+            }
+            
+            update(timestamp) {
+                if (!this.isRunning) return;
+                
+                const deltaTime = timestamp - this.lastTimestamp;
+                this.lastTimestamp = timestamp;
+                
+                // Update each car
+                for (let i = 0; i < this.cars.length; i++) {
+                    // Calculate distance to car ahead
+                    let leadCarDistance = null;
+                    const nextCarIndex = (i === 0) ? this.cars.length - 1 : i - 1;
+                    const currentCar = this.cars[i];
+                    const nextCar = this.cars[nextCarIndex];
+                    
+                    // Calculate distance, accounting for wrap-around
+                    if (nextCar.x > currentCar.x) {
+                        leadCarDistance = nextCar.x - currentCar.x;
+                    } else {
+                        leadCarDistance = (this.containerWidth - currentCar.x) + nextCar.x;
+                    }
+                    leadCarDistance -= currentCar.width; // Adjust for car length
+                    
+                    currentCar.update(deltaTime, leadCarDistance, this.containerWidth);
+                }
+                
+                requestAnimationFrame(timestamp => this.update(timestamp));
+            }
+        }
+        
+        // Initialize the simulation when the page loads
+        window.addEventListener('load', () => {
+            const simulation = new TrafficSimulation();
+        });
+    </script>
+</body>
+</html>
+
+

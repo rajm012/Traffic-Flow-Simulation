@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controlled Traffic Shock Wave Simulation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .simulation-container {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            background-color: #f0f0f0;
+            margin: 20px 0;
+            overflow: hidden;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .road {
+            position: absolute;
+            width: 100%;
+            height: 140px;
+            background-color: #555;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .lane-divider {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background-color: #fff;
+            top: 50%;
+            transform: translateY(-50%);
+            border-style: dashed;
+        }
+        
+        .lane-top {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background-color: #fff;
+            top: calc(50% - 70px);
+            transform: translateY(-50%);
+        }
+        
+        .lane-bottom {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background-color: #fff;
+            top: calc(50% + 70px);
+            transform: translateY(-50%);
+        }
+        
+        .car {
+            position: absolute;
+            width: 40px;
+            height: 20px;
+            border-radius: 3px;
+            text-align: center;
+            font-size: 10px;
+            color: white;
+            transition: background-color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .speed-indicator {
+            position: absolute;
+            font-size: 10px;
+            color: #333;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 2px 4px;
+            border-radius: 3px;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            font-family: 'Courier New', monospace;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .controls {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        button, select {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            background-color: #3498db;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            flex-grow: 1;
+            min-width: 120px;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        button:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+        
+        #brakeBtn {
+            background-color: #e74c3c;
+        }
+        
+        #brakeBtn:hover {
+            background-color: #c0392b;
+        }
+        
+        #brakeBtn2 {
+            background-color: #e74c3c;
+        }
+        
+        #brakeBtn2:hover {
+            background-color: #c0392b;
+        }
+        
+        #releaseBtn {
+            background-color: #27ae60;
+        }
+        
+        #releaseBtn:hover {
+            background-color: #2ecc71;
+        }
+        
+        #releaseBtn2 {
+            background-color: #27ae60;
+        }
+        
+        #releaseBtn2:hover {
+            background-color: #2ecc71;
+        }
+        
+        .slider-container {
+            margin-bottom: 15px;
+        }
+        
+        .slider-container label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+        }
+        
+        .info-panel {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        h2 {
+            color: #2c3e50;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        
+        .legend {
+            display: flex;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            margin-right: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #ecf0f1;
+            border-radius: 6px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        @media (max-width: 768px) {
+            .controls {
+                grid-template-columns: 1fr;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Controlled Traffic Shock Wave Simulation</h1>
+    
+    <div class="controls">
+        <div class="control-group">
+            <div class="button-group">
+                <button id="startBtn">▶ Start Simulation</button>
+                <button id="stopBtn">⏹ Stop Simulation</button>
+                <button id="resetBtn">🔄 Reset</button>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <div class="button-group">
+                <button id="brakeBtn">⚠ STOP Lane 1</button>
+                <button id="releaseBtn">✓ Release Lane 1</button>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <div class="button-group">
+                <button id="brakeBtn2">⚠ STOP Lane 2</button>
+                <button id="releaseBtn2">✓ Release Lane 2</button>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <div class="slider-container">
+                <label for="numCars">Cars per Lane: <span id="numCarsValue">15</span></label>
+                <input type="range" id="numCars" min="5" max="30" value="15">
+            </div>
+            
+            <div class="slider-container">
+                <label for="initialSpeed">Initial Speed: <span id="initialSpeedValue">8</span></label>
+                <input type="range" id="initialSpeed" min="1" max="10" value="8">
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <div class="slider-container">
+                <label for="propagationDelay">Stop Propagation Delay (ms): <span id="propagationDelayValue">200</span></label>
+                <input type="range" id="propagationDelay" min="0" max="1000" step="100" value="200">
+            </div>
+            
+            <div class="slider-container">
+                <label for="releasePropagationDelay">Release Propagation Delay (ms): <span id="releasePropagationDelayValue">500</span></label>
+                <input type="range" id="releasePropagationDelay" min="0" max="2000" step="100" value="500">
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <div class="slider-container">
+                <label for="showSpeed">
+                    <input type="checkbox" id="showSpeed" checked>
+                    Show Speed Indicators
+                </label>
+            </div>
+            
+            <div class="slider-container">
+                <label for="highlightJam">
+                    <input type="checkbox" id="highlightJam" checked>
+                    Highlight Jam Wave
+                </label>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stats">
+        <div class="stat-item">
+            <div class="stat-value" id="avgSpeed1">0.0</div>
+            <div class="stat-label">Avg Speed (Lane 1)</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="jammed1">0%</div>
+            <div class="stat-label">Jammed % (Lane 1)</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="avgSpeed2">0.0</div>
+            <div class="stat-label">Avg Speed (Lane 2)</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="jammed2">0%</div>
+            <div class="stat-label">Jammed % (Lane 2)</div>
+        </div>
+    </div>
+    
+    <div class="simulation-container">
+        <div class="road"></div>
+        <div class="lane-divider"></div>
+        <div class="lane-top"></div>
+        <div class="lane-bottom"></div>
+    </div>
+    
+    <div class="info-panel">
+        <h2>Visualization Key</h2>
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #2ecc71;"></div>
+                <div>Moving (v > 0)</div>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #e74c3c;"></div>
+                <div>Stopped (v = 0)</div>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #9b59b6;"></div>
+                <div>Jam Shock Wave Front</div>
+            </div>
+        </div>
+        
+        <h2>About Traffic Shock Waves</h2>
+        <p>
+            This simulation demonstrates a controlled traffic jam scenario where clicking the "STOP" button causes vehicles in that lane to come to a complete stop, 
+            starting from the first car and propagating backward. This creates a clearly visible shock wave of stopped vehicles.
+        </p>
+        <p>
+            Key features of this simulation:
+        </p>
+        <ul>
+            <li>When a lane is stopped, the jam propagates backward with a configurable delay</li>
+            <li>The stop wave front is highlighted in purple (when "Highlight Jam Wave" is enabled)</li>
+            <li>The "Release" button allows traffic to start moving again, with vehicles resuming their movement in sequence</li>
+            <li>Statistics show the average speed and percentage of stopped vehicles in each lane</li>
+        </ul>
+        <p>
+            This model clearly demonstrates how traffic jams can form and propagate through a line of vehicles, even when the trigger event 
+            (the first car stopping) may no longer be present.
+        </p>
+    </div>
+
+    <script>
+        class Car {
+            constructor(id, x, speed, lane, container, maxSpeed) {
+                this.id = id;
+                this.x = x;
+                this.speed = speed;
+                this.maxSpeed = maxSpeed;
+                this.baseMaxSpeed = maxSpeed;
+                this.minSpeed = 0;
+                this.targetSpeed = speed;
+                this.acceleration = 0.6;
+                this.deceleration = 1.2;
+                this.safeDistance = 50;
+                this.container = container;
+                this.lane = lane; // 1 for top lane, 2 for bottom lane
+                this.width = 40;
+                this.height = 20;
+                this.isStopped = false;
+                this.isJamWaveFront = false;
+                
+                // Create car element
+                this.element = document.createElement('div');
+                this.element.className = 'car';
+                this.element.style.left = this.x + 'px';
+                this.element.id = 'car-' + this.id;
+                
+                // Position based on lane
+                if (this.lane === 1) {
+                    this.element.style.top = 'calc(50% - 35px)';
+                    this.element.style.transform = 'translateY(-50%)';
+                } else {
+                    this.element.style.top = 'calc(50% + 35px)';
+                    this.element.style.transform = 'translateY(-50%)';
+                }
+                
+                this.updateColor();
+                this.element.textContent = id + 1;
+                this.container.appendChild(this.element);
+                
+                // Create speed indicator
+                this.speedIndicator = document.createElement('div');
+                this.speedIndicator.className = 'speed-indicator';
+                this.updateSpeedIndicator();
+                this.container.appendChild(this.speedIndicator);
+            }
+            
+            updateColor() {
+                if (this.isJamWaveFront) {
+                    this.element.style.backgroundColor = '#9b59b6'; // Purple for jam wave front
+                } else if (this.speed === 0) {
+                    this.element.style.backgroundColor = '#e74c3c'; // Red for stopped
+                } else {
+                    this.element.style.backgroundColor = '#2ecc71'; // Green for moving
+                }
+            }
+            
+            updateSpeedIndicator() {
+                // Format speed to one decimal place
+                const formattedSpeed = this.speed.toFixed(1);
+                this.speedIndicator.textContent = formattedSpeed;
+                
+                // Position the indicator above the car
+                const top = this.lane === 1 ? 
+                    'calc(50% - 55px)' : 'calc(50% + 15px)';
+                
+                this.speedIndicator.style.left = (this.x + this.width/2) + 'px';
+                this.speedIndicator.style.top = top;
+            }
+            
+            update(deltaTime, leadCarDistance, containerWidth, showSpeed) {
+                // Only update position and speed if not stopped
+                if (!this.isStopped) {
+                    // Calculate safe distance based on current speed
+                    this.safeDistance = Math.max(30, this.speed * 2);
+                    
+                    // Calculate desired speed based on distance to car ahead
+                    if (leadCarDistance !== null) {
+                        // Adjust speed based on distance to lead car
+                        const distanceRatio = leadCarDistance / this.safeDistance;
+                        
+                        if (distanceRatio < 0.8) {
+                            // Too close - brake hard
+                            this.targetSpeed = Math.max(0, this.targetSpeed - this.deceleration * 1.5);
+                        } else if (distanceRatio < 1.2) {
+                            // Getting close - slow down
+                            this.targetSpeed = Math.max(0, this.targetSpeed - this.deceleration * 0.8);
+                        } else if (distanceRatio > 1.5) {
+                            // Far enough - accelerate
+                            this.targetSpeed = Math.min(this.maxSpeed, this.targetSpeed + this.acceleration);
+                        }
+                    }
+                    
+                    // Gradually adjust current speed to target speed
+                    if (this.speed < this.targetSpeed) {
+                        this.speed = Math.min(this.speed + this.acceleration, this.targetSpeed);
+                    } else if (this.speed > this.targetSpeed) {
+                        this.speed = Math.max(0, this.speed - this.deceleration);
+                    }
+                    
+                    // Update position
+                    this.x += this.speed * deltaTime / 16;
+                    
+                    // Wrap around when car reaches the end of the container
+                    if (this.x > containerWidth) {
+                        this.x = -this.width;
+                    }
+                }
+                
+                // Update car color
+                this.updateColor();
+                
+                // Update visual representation
+                this.element.style.left = this.x + 'px';
+                
+                // Update speed indicator
+                if (showSpeed) {
+                    this.updateSpeedIndicator();
+                    this.speedIndicator.style.display = 'block';
+                } else {
+                    this.speedIndicator.style.display = 'none';
+                }
+            }
+            
+            stop() {
+                this.isStopped = true;
+                this.targetSpeed = 0;
+                this.speed = 0;
+                this.updateColor();
+                this.updateSpeedIndicator();
+            }
+            
+            release() {
+                this.isStopped = false;
+                this.targetSpeed = this.maxSpeed;
+                this.updateColor();
+            }
+            
+            setAsJamWaveFront(isWaveFront) {
+                this.isJamWaveFront = isWaveFront;
+                this.updateColor();
+            }
+            
+            remove() {
+                this.container.removeChild(this.element);
+                this.container.removeChild(this.speedIndicator);
+            }
+        }
+        
+        class TrafficSimulation {
+            constructor() {
+                this.container = document.querySelector('.simulation-container');
+                this.containerWidth = this.container.offsetWidth;
+                this.cars = [];
+                this.isRunning = false;
+                this.lastTimestamp = 0;
+                
+                // Lane state tracking
+                this.lane1Stopped = false;
+                this.lane2Stopped = false;
+                this.jamWaveFront1 = -1; // Index of car at jam wave front in lane 1
+                this.jamWaveFront2 = -1; // Index of car at jam wave front in lane 2
+                
+                // DOM elements
+                this.startBtn = document.getElementById('startBtn');
+                this.stopBtn = document.getElementById('stopBtn');
+                this.resetBtn = document.getElementById('resetBtn');
+                this.brakeBtn = document.getElementById('brakeBtn');
+                this.brakeBtn2 = document.getElementById('brakeBtn2');
+                this.releaseBtn = document.getElementById('releaseBtn');
+                this.releaseBtn2 = document.getElementById('releaseBtn2');
+                this.numCarsSlider = document.getElementById('numCars');
+                this.numCarsValue = document.getElementById('numCarsValue');
+                this.initialSpeedSlider = document.getElementById('initialSpeed');
+                this.initialSpeedValue = document.getElementById('initialSpeedValue');
+                this.propagationDelaySlider = document.getElementById('propagationDelay');
+                this.propagationDelayValue = document.getElementById('propagationDelayValue');
+                this.releasePropagationDelaySlider = document.getElementById('releasePropagationDelay');
+                this.releasePropagationDelayValue = document.getElementById('releasePropagationDelayValue');
+                this.showSpeedCheckbox = document.getElementById('showSpeed');
+                this.highlightJamCheckbox = document.getElementById('highlightJam');
+                this.avgSpeed1Display = document.getElementById('avgSpeed1');
+                this.avgSpeed2Display = document.getElementById('avgSpeed2');
+                this.jammed1Display = document.getElementById('jammed1');
+                this.jammed2Display = document.getElementById('jammed2');
+                
+                // Initialize event listeners
+                this.initEventListeners();
+                
+                // Initialize slider values
+                this.updateSliderValues();
+            }
+            
+            initEventListeners() {
+                this.startBtn.addEventListener('click', () => this.start());
+                this.stopBtn.addEventListener('click', () => this.stop());
+                this.resetBtn.addEventListener('click', () => this.reset());
+                this.brakeBtn.addEventListener('click', () => this.initiateStop(1));
+                this.brakeBtn2.addEventListener('click', () => this.initiateStop(2));
+                this.releaseBtn.addEventListener('click', () => this.initiateRelease(1));
+                this.releaseBtn2.addEventListener('click', () => this.initiateRelease(2));
+                
+                this.numCarsSlider.addEventListener('input', () => {
+                    this.numCarsValue.textContent = this.numCarsSlider.value;
+                });
+                
+                this.initialSpeedSlider.addEventListener('input', () => {
+                    this.initialSpeedValue.textContent = this.initialSpeedSlider.value;
+                });
+                
+                this.propagationDelaySlider.addEventListener('input', () => {
+                    this.propagationDelayValue.textContent = this.propagationDelaySlider.value;
+                });
+                
+                this.releasePropagationDelaySlider.addEventListener('input', () => {
+                    this.releasePropagationDelayValue.textContent = this.releasePropagationDelaySlider.value;
+                });
+                
+                // Update car speeds when initial speed changes
+                this.initialSpeedSlider.addEventListener('change', () => {
+                    if (this.isRunning) {
+                        const newSpeed = parseInt(this.initialSpeedSlider.value);
+                        this.cars.forEach(car => {
+                            if (!car.isStopped) {
+                                car.maxSpeed = newSpeed;
+                                car.baseMaxSpeed = newSpeed;
+                                car.targetSpeed = newSpeed;
+                            }
+                        });
+                    }
+                });
+                
+                // Handle window resize
+                window.addEventListener('resize', () => {
+                    this.containerWidth = this.container.offsetWidth;
+                });
+            }
+            
+            updateSliderValues() {
+                this.numCarsValue.textContent = this.numCarsSlider.value;
+                this.initialSpeedValue.textContent = this.initialSpeedSlider.value;
+                this.propagationDelayValue.textContent = this.propagationDelaySlider.value;
+                this.releasePropagationDelayValue.textContent = this.releasePropagationDelaySlider.value;
+            }
+            
+            setup() {
+                const numCarsPerLane = parseInt(this.numCarsSlider.value);
+                const speed = parseInt(this.initialSpeedSlider.value);
+                
+                // Clear existing cars
+                this.cars.forEach(car => car.remove());
+                this.cars = [];
+                
+                // Reset lane states
+                this.lane1Stopped = false;
+                this.lane2Stopped = false;
+                this.jamWaveFront1 = -1;
+                this.jamWaveFront2 = -1;
+                
+                // Create new cars for lane 1 (top)
+                const spacing = this.containerWidth / numCarsPerLane;
+                for (let i = 0; i < numCarsPerLane; i++) {
+                    const car = new Car(i, i * spacing, speed, 1, this.container, speed);
+                    this.cars.push(car);
+                }
+                
+                // Create new cars for lane 2 (bottom)
+                for (let i = 0; i < numCarsPerLane; i++) {
+                    const car = new Car(i + numCarsPerLane, i * spacing + spacing/2, speed, 2, this.container, speed);
+                    this.cars.push(car);
+                }
+            }
+            
+            start() {
+                if (!this.isRunning) {
+                    this.isRunning = true;
+                    this.setup();
+                    this.lastTimestamp = performance.now();
+                    requestAnimationFrame(timestamp => this.update(timestamp));
+                }
+            }
+            
+            stop() {
+                this.isRunning = false;
+            }
+            
+            reset() {
+                this.stop();
+                this.setup();
+                this.updateStats();
+            }
+            
+            // Stop all cars in a lane with propagation delay
+            initiateStop(lane) {
+                if (!this.isRunning) return;
+                
+                const propagationDelay = parseInt(this.propagationDelaySlider.value);
+                const carsInLane = this.getCarsInLane(lane);
+                
+                if (lane === 1) {
+                    this.lane1Stopped = true;
+                    this.jamWaveFront1 = 0;
+                } else {
+                    this.lane2Stopped = true;
+                    this.jamWaveFront2 = 0;
+                }
+                
+                // First car stops immediately
+                if (carsInLane.length > 0) {
+                    carsInLane[0].stop();
+                    carsInLane[0].setAsJamWaveFront(this.highlightJamCheckbox.checked);
+                    
+                    // Propagate the stop wave with delay
+                    for (let i = 1; i < carsInLane.length; i++) {
+                        const car = carsInLane[i];
+                        setTimeout(() => {
+                            if (this.isRunning) {
+                                car.stop();
+                                
+                                // Update jam wave front
+                                if (i === this.jamWaveFront1 && lane === 1) {
+                                    carsInLane[i-1].setAsJamWaveFront(false);
+                                    car.setAsJamWaveFront(this.highlightJamCheckbox.checked);
+                                    this.jamWaveFront1 = i;
+                                } else if (i === this.jamWaveFront2 && lane === 2) {
+                                    carsInLane[i-1].setAsJamWaveFront(false);
+                                    car.setAsJamWaveFront(this.highlightJamCheckbox.checked);
+                                    this.jamWaveFront2 = i;
+                                }
+                            }
+                        }, propagationDelay * i);
+                    }
+                }
+            }
+            
+            // Release cars with propagation delay
+            initiateRelease(lane) {
+                if (!this.isRunning) return;
+                
+                const releasePropagationDelay = parseInt(this.releasePropagationDelaySlider.value);
+                const carsInLane = this.getCarsInLane(lane);
+                
+                if (lane === 1) {
+                    this.lane1Stopped = false;
+                    if (this.jamWaveFront1 >= 0 && this.jamWaveFront1 < carsInLane.length) {
+                        carsInLane[this.jamWaveFront1].setAsJamWaveFront(false);
+                    }
+                    this.jamWaveFront1 = -1;
+                } else {
+                    this.lane2Stopped = false;
+                    if (this.jamWaveFront2 >= 0 && this.jamWaveFront2 < carsInLane.length) {
+                        carsInLane[this.jamWaveFront2].setAsJamWaveFront(false);
+                    }
+                    this.jamWaveFront2 = -1;
+                }
+                
+                // Release cars one by one with delay
+                for (let i = 0; i < carsInLane.length; i++) {
+                    const car = carsInLane[i];
+                    setTimeout(() => {
+                        if (this.isRunning) {
+                            car.release();
+                        }
+                    }, releasePropagationDelay * i);
+                }
+            }
+            
+            getCarsInLane(lane) {
+                return this.cars.filter(car => car.lane === lane);
+            }
+            
+            updateStats() {
+                const lane1Cars = this.getCarsInLane(1);
+                const lane2Cars = this.getCarsInLane(2);
+                
+                // Calculate average speeds
+                const avgSpeed1 = lane1Cars.reduce((sum, car) => sum + car.speed, 0) / lane1Cars.length || 0;
+                const avgSpeed2 = lane2Cars.reduce((sum, car) => sum + car.speed, 0) / lane2Cars.length || 0;
+                
+                this.avgSpeed1Display.textContent = avgSpeed1.toFixed(1);
+                this.avgSpeed2Display.textContent = avgSpeed2.toFixed(1);
+                
+                                // Calculate percentage of stopped cars
+                const jammed1 = (lane1Cars.filter(car => car.speed === 0).length / lane1Cars.length * 100) || 0;
+                const jammed2 = (lane2Cars.filter(car => car.speed === 0).length / lane2Cars.length * 100) || 0;
+                
+                this.jammed1Display.textContent = jammed1.toFixed(0) + '%';
+                this.jammed2Display.textContent = jammed2.toFixed(0) + '%';
+            }
+            
+            update(timestamp) {
+                if (!this.isRunning) return;
+                
+                // Calculate time delta for smooth animation
+                const deltaTime = timestamp - this.lastTimestamp;
+                this.lastTimestamp = timestamp;
+                
+                // Update each car
+                const showSpeed = this.showSpeedCheckbox.checked;
+                const highlightJam = this.highlightJamCheckbox.checked;
+                
+                // Update jam wave front highlighting
+                if (this.lane1Stopped && this.jamWaveFront1 >= 0) {
+                    const lane1Cars = this.getCarsInLane(1);
+                    if (this.jamWaveFront1 < lane1Cars.length) {
+                        lane1Cars[this.jamWaveFront1].setAsJamWaveFront(highlightJam);
+                    }
+                }
+                
+                if (this.lane2Stopped && this.jamWaveFront2 >= 0) {
+                    const lane2Cars = this.getCarsInLane(2);
+                    if (this.jamWaveFront2 < lane2Cars.length) {
+                        lane2Cars[this.jamWaveFront2].setAsJamWaveFront(highlightJam);
+                    }
+                }
+                
+                // Process each lane separately
+                for (let lane = 1; lane <= 2; lane++) {
+                    const carsInLane = this.getCarsInLane(lane);
+                    
+                    for (let i = 0; i < carsInLane.length; i++) {
+                        const car = carsInLane[i];
+                        const nextCar = carsInLane[(i + 1) % carsInLane.length];
+                        
+                        // Calculate distance to next car (considering wrap-around)
+                        let distance;
+                        if (nextCar.x > car.x) {
+                            distance = nextCar.x - (car.x + car.width);
+                        } else {
+                            distance = (this.containerWidth - (car.x + car.width)) + nextCar.x;
+                        }
+                        
+                        // Update car
+                        car.update(deltaTime, distance, this.containerWidth, showSpeed);
+                    }
+                }
+                
+                // Update statistics
+                this.updateStats();
+                
+                // Continue animation loop
+                requestAnimationFrame(timestamp => this.update(timestamp));
+            }
+        }
+        
+        // Initialize the simulation when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            const simulation = new TrafficSimulation();
+        });
+    </script>
+</body>
+</html>
+                
