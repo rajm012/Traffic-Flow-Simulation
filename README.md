@@ -21,6 +21,10 @@ This project simulates traffic shock waves that occur when vehicles slow down an
 3. Adjust the sliders to change the number of cars, initial speed, jam propagation delay, and braking force.
 4. Observe the behavior of the cars as they react to the simulated traffic conditions.
 
+## Simulation Link
+
+  - Visit this [link](https://amaranth-darda-23.tiiny.site)
+
 ## About Traffic Shock Waves
 
 Traffic shock waves occur when vehicles slow down due to various factors, such as congestion or obstacles. This simulation allows users to visualize how these waves propagate through traffic, affecting the speed and flow of vehicles.
